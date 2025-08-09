@@ -1,7 +1,7 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
 
 export default class extends BaseSchema {
-  protected tableName = 'users'
+  protected tableName = 'usuarios'
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
@@ -14,7 +14,7 @@ export default class extends BaseSchema {
       table.integer('puntos').defaultTo(0)
       table.integer('nivel_actividad').defaultTo(1)
       table
-        .enu('role', ['usuario', 'admin'], { useNative: true, enumName: 'user_roles' })
+        .enu('rol', ['usuario', 'admin'], { useNative: true, enumName: 'user_roles' })
         .notNullable()
         .defaultTo('usuario')
 

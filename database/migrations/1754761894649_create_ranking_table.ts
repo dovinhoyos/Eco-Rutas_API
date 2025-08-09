@@ -10,7 +10,7 @@ export default class extends BaseSchema {
         .unsigned()
         .primary()
         .references('id')
-        .inTable('users')
+        .inTable('usuarios')
         .onDelete('CASCADE')
       table.integer('puntos_totales').notNullable()
       table.integer('posicion').notNullable()

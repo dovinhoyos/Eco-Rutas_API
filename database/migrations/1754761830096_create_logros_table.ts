@@ -11,6 +11,8 @@ export default class extends BaseSchema {
       table.string('icono_url', 255).nullable()
       table.integer('puntos').defaultTo(0)
       table.jsonb('condicion').nullable()
+
+      table.timestamp('created_at').notNullable()
     })
   }
 

@@ -15,8 +15,8 @@ export const registerValidator = vine.compile(
       .string()
       .email()
       .unique(async (db, value) => {
-        const user = await db.from('users').where('email', value).first()
-        return !user
+        const usuario = await db.from('usuarios').where('email', value).first()
+        return !usuario
       }),
     password: vine.string().minLength(12).maxLength(512),
     avatarUrl: vine.string().optional(),

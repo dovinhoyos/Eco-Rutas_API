@@ -1,34 +1,37 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { registerValidator, loginValidator } from '#validators/auth'
-import User from '#models/user'
+import Usuario from '#models/usuario'
 
 export default class AuthController {
   async register({ request, response }: HttpContext) {
-    const payload = await request.validateUsing(registerValidator)
-    const user = await User.create(payload)
+    try {
+      const payload = await request.validateUsing(registerValidator)
+      const usuario = await Usuario.create(payload)
 
-    return response.created(user)
+      return response.created(usuario)
+    } catch (error) {
+      return response.badRequest({ error: 'Registration failed', details: error.messages })
+    }
   }
 
   async login({ request, response }: HttpContext) {
     const { email, password } = await request.validateUsing(loginValidator)
 
-    const user = await User.verifyCredentials(email, password)
-    const token = await User.accessTokens.create(user)
+    const usuario = await Usuario.verifyCredentials(email, password)
+    const token = await Usuario.accessTokens.create(usuario)
 
     return response.ok({
       token: token,
-      ...user.serialize(),
     })
   }
 
   async logout({ auth, response }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const usuario = auth.getUserOrFail()
     const token = auth.user?.currentAccessToken.identifier
     if (!token) {
       return response.badRequest({ message: 'Token not found' })
     }
-    await User.accessTokens.delete(user, token)
+    await Usuario.accessTokens.delete(usuario, token)
     return response.ok({ message: 'Logged out' })
   }
 }

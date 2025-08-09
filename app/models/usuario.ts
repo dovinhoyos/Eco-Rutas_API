@@ -9,14 +9,13 @@ import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
 import Ruta from '#models/ruta'
 import Logro from '#models/logro'
 import Ranking from '#models/ranking'
-import Reporte from './reporte.js'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
   passwordColumnName: 'password',
 })
 
-export default class User extends compose(BaseModel, AuthFinder) {
+export default class Usuario extends compose(BaseModel, AuthFinder) {
   @column({ isPrimary: true })
   declare id: number
 
@@ -53,9 +52,6 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @hasMany(() => Ruta)
   declare rutas: HasMany<typeof Ruta>
 
-  @hasMany(() => Reporte)
-  declare reportes: HasMany<typeof Reporte>
-
   @manyToMany(() => Logro, {
     pivotTable: 'logro_usuarios',
     pivotColumns: ['fecha_obtenido'],
@@ -65,10 +61,10 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @hasOne(() => Ranking)
   declare ranking: HasOne<typeof Ranking>
 
-  static accessTokens = DbAccessTokensProvider.forModel(User, {
+  static accessTokens = DbAccessTokensProvider.forModel(Usuario, {
     expiresIn: '30 days',
     prefix: 'oat_',
-    table: 'auth_access_tokens',
+    table: 'access_tokens',
     type: 'auth_token',
     tokenSecretLength: 40,
   })

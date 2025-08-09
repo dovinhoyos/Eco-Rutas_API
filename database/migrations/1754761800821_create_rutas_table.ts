@@ -6,7 +6,12 @@ export default class extends BaseSchema {
   async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id').primary()
-      table.integer('id_usuario').unsigned().references('id').inTable('users').onDelete('CASCADE')
+      table
+        .integer('id_usuario')
+        .unsigned()
+        .references('id')
+        .inTable('usuarios')
+        .onDelete('CASCADE')
       table.jsonb('origen').notNullable()
       table.jsonb('destino').notNullable()
       table

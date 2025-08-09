@@ -1,6 +1,7 @@
 import { BaseModel, column, manyToMany } from '@adonisjs/lucid/orm'
 import type { ManyToMany } from '@adonisjs/lucid/types/relations'
-import User from './user.js'
+import Usuario from './usuario.js'
+import { DateTime } from 'luxon'
 
 export default class Logro extends BaseModel {
   @column({ isPrimary: true })
@@ -21,9 +22,12 @@ export default class Logro extends BaseModel {
   @column()
   declare condicion: any | null
 
-  @manyToMany(() => User, {
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+
+  @manyToMany(() => Usuario, {
     pivotTable: 'logro_usuarios',
     pivotColumns: ['fecha_obtenido'],
   })
-  declare usuarios: ManyToMany<typeof User>
+  declare usuarios: ManyToMany<typeof Usuario>
 }
