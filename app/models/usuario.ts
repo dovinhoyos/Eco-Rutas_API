@@ -32,6 +32,12 @@ export default class Usuario extends compose(BaseModel, AuthFinder) {
   declare password: string
 
   @column()
+  declare providerId: string
+
+  @column()
+  declare provider: string
+
+  @column()
   declare avatarUrl: string | null
 
   @column()

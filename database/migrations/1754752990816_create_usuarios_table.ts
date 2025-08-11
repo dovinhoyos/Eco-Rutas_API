@@ -9,6 +9,8 @@ export default class extends BaseSchema {
       table.string('nombre').notNullable()
       table.string('apellido').notNullable()
       table.string('email', 254).notNullable().unique()
+      table.string('provider')
+      table.string('provider_id')
       table.string('password').notNullable()
       table.string('avatar_url').nullable()
       table.integer('puntos').defaultTo(0)
