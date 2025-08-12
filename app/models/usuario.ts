@@ -74,4 +74,53 @@ export default class Usuario extends compose(BaseModel, AuthFinder) {
     type: 'auth_token',
     tokenSecretLength: 40,
   })
+
+  async createToken(name: string, options?: any) {
+    return await (this as any).createToken(name, options)
+  }
+
+  static async findOrCreateSocialUser(data: {
+    email: string
+    nombre?: string
+    apellido?: string
+    provider: string
+    providerId: string
+    avatarUrl?: string
+  }) {
+    let user = await Usuario.query()
+      .where('provider', data.provider)
+      .where('provider_id', data.providerId)
+      .first()
+
+    if (!user && data.email) {
+      // Si no existe por provider, buscamos por email para vincular
+      user = await Usuario.query().where('email', data.email).first()
+    }
+
+    if (!user) {
+      user = await Usuario.create({
+        email: data.email,
+        nombre: data.nombre || '',
+        apellido: data.apellido || '',
+        provider: data.provider,
+        providerId: data.providerId,
+        avatarUrl: data.avatarUrl || null,
+        puntos: 0,
+        nivelActividad: 0,
+        rol: 'usuario',
+      })
+    } else {
+      // Actualizamos avatar y datos por si cambiaron
+      user.merge({
+        nombre: data.nombre || user.nombre,
+        apellido: data.apellido || user.apellido,
+        avatarUrl: data.avatarUrl || user.avatarUrl,
+        provider: data.provider,
+        providerId: data.providerId,
+      })
+      await user.save()
+    }
+
+    return user
+  }
 }

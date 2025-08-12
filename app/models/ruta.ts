@@ -25,7 +25,7 @@ export default class Ruta extends BaseModel {
   @column()
   declare duracionMin: number
 
-  @column()
+  @column({ columnName: 'co2_ahorrado_kg' })
   declare co2AhorradoKg: number
 
   @column.dateTime({ autoCreate: true })
