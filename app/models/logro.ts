@@ -19,8 +19,11 @@ export default class Logro extends BaseModel {
   @column()
   declare iconoUrl: string | null
 
-  @column()
-  declare condicion: any | null
+  @column({
+    prepare: (value) => (value ? JSON.stringify(value) : null),
+    consume: (value) => (value ? JSON.parse(value) : null),
+  })
+  declare condicion: Record<string, any> | null
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
