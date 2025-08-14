@@ -28,5 +28,5 @@ router
     router.post('/', [RutasController, 'store'])
     router.get('/', [RutasController, 'index'])
   })
-  .prefix('routes')
+  .prefix('rutas')
   .use(middleware.auth())

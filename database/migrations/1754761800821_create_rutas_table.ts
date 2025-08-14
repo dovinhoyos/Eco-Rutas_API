@@ -5,20 +5,22 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.increments('id').primary()
+      table.increments('id')
       table
         .integer('id_usuario')
         .unsigned()
         .references('id')
         .inTable('usuarios')
         .onDelete('CASCADE')
+
       table.enum('medio_transporte', ['bicicleta', 'caminando', 'transporte_publico']).notNullable()
-      table.string('origen').notNullable()
-      table.string('destino').notNullable()
-      table.double('distancia_km').notNullable()
-      table.double('duracion_min').notNullable()
-      table.double('co2_ahorrado_kg').notNullable()
-      table.specificType('geom', 'geometry(LineString,4326)').notNullable()
+
+      table.specificType('origen', 'decimal[]').notNullable()
+      table.specificType('destino', 'decimal[]').notNullable()
+
+      table.decimal('distancia_km', 8, 3).nullable().defaultTo(0)
+      table.integer('duracion_min').nullable().defaultTo(0)
+      table.decimal('co2_ahorrado_kg', 8, 3).nullable().defaultTo(0)
 
       table.timestamp('created_at', { useTz: true }).defaultTo(this.now())
     })
