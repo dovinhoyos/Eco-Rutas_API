@@ -3,6 +3,7 @@ import { middleware } from './kernel.js'
 
 const AuthController = () => import('#controllers/auth_controller')
 const RutasController = () => import('#controllers/rutas_controller')
+const UsersController = () => import('#controllers/users_controller')
 
 router
   .group(() => {
@@ -10,60 +11,22 @@ router
     router.post('login', [AuthController, 'login'])
     router.post('logout', [AuthController, 'logout']).use(middleware.auth())
   })
-  .prefix('user')
+  .prefix('auth')
 
 router
   .group(() => {
-    router.post('/routes', [RutasController, 'store'])
-    router.get('/routes', [RutasController, 'index'])
+    router.get('/', [UsersController, 'index'])
+    router.get('/:id', [UsersController, 'show'])
+    router.post('/', [UsersController, 'store'])
+    router.put('/:id', [UsersController, 'edit'])
+    router.delete('/:id', [UsersController, 'destroy'])
   })
-  .use(middleware.auth())
+  .prefix('users')
 
 router
-  .get('me', async ({ auth, response }) => {
-    try {
-      const user = auth.getUserOrFail()
-      return response.ok(user)
-    } catch (error) {
-      return response.unauthorized({ error: 'User not found' })
-    }
+  .group(() => {
+    router.post('/', [RutasController, 'store'])
+    router.get('/', [RutasController, 'index'])
   })
+  .prefix('routes')
   .use(middleware.auth())
-
-router.get('/github/redirect', ({ ally }) => {
-  return ally.use('github').redirect()
-})
-
-router.get('/github/callback', async ({ ally }) => {
-  const gh = ally.use('github')
-
-  /**
-   * User has denied access by canceling
-   * the login flow
-   */
-  if (gh.accessDenied()) {
-    return 'You have cancelled the login process'
-  }
-
-  /**
-   * OAuth state verification failed. This happens when the
-   * CSRF cookie gets expired.
-   */
-  if (gh.stateMisMatch()) {
-    return 'We are unable to verify the request. Please try again'
-  }
-
-  /**
-   * GitHub responded with some error
-   */
-  if (gh.hasError()) {
-    return gh.getError()
-  }
-
-  /**
-   * Access user info
-   */
-  const user = await gh.user()
-  console.log('GitHub User:', user)
-  return user
-})
