@@ -102,7 +102,7 @@ export default class RutasController {
       const routes = await db.rawQuery(query, [auth.user!.id])
 
       return response.ok(
-        routes.rows.map((route) => ({
+        routes.rows.map((route: any) => ({
           id: route.id,
           medio_transporte: route.medio_transporte,
           origen: route.origen,
