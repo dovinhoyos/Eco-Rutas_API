@@ -1,92 +1,69 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import db from '@adonisjs/lucid/services/db'
+import env from '#start/env'
 import axios from 'axios'
+import Ruta from '#models/ruta'
 
 export default class RutasController {
-  async store({ request, auth, response }: HttpContext) {
-    const { medioTransporte, waypoints } = request.only(['medioTransporte', 'waypoints'])
+  public async store({ request, auth, response }: HttpContext) {
+    const { medioTransporte, origen, destino } = request.only([
+      'medioTransporte',
+      'origen',
+      'destino',
+    ])
 
-    // Validar datos básicos
     if (!['bicicleta', 'caminando', 'transporte_publico'].includes(medioTransporte)) {
-      return response.badRequest({
-        error: 'Modo inválido. Usa bicicleta, caminando o transporte_publico.',
-      })
+      return response.badRequest({ error: 'Modo inválido' })
     }
-    if (!Array.isArray(waypoints) || waypoints.length < 2) {
-      return response.badRequest({ error: 'Se requieren al menos dos puntos en waypoints' })
+    if (
+      !Array.isArray(origen) ||
+      origen.length !== 2 ||
+      !Array.isArray(destino) ||
+      destino.length !== 2
+    ) {
+      return response.badRequest({ error: 'Formato de coordenadas inválido' })
     }
 
-    // Construir string coords en formato OSRM: lng,lat;lng,lat
-    const coords = waypoints.map(([lat, lng]: [number, number]) => `${lng},${lat}`).join(';')
-
-    // Mapear perfil OSRM
-    const profileMap: Record<string, string> = {
-      medioTransporte: 'bicycle',
+    const profileMap = {
+      bicicleta: 'bicycle',
       caminando: 'foot',
-      transporte_publico: 'foot',
+      transporte_publico: 'driving',
     }
-    const profile = profileMap[medioTransporte]
 
-    const OSRM_HOST = process.env.OSRM_HOST || 'http://router.project-osrm.org'
+    const profile = profileMap[medioTransporte as keyof typeof profileMap]
+
+    const OSRM_HOST = env.get('OSRM_HOST')
+    const coords = `${origen[1]},${origen[0]};${destino[1]},${destino[0]}`
     const url = `${OSRM_HOST}/route/v1/${profile}/${coords}?overview=full&geometries=geojson`
 
     try {
-      console.log('🔍 Consultando OSRM:', url)
       const osrmResp = await axios.get(url)
-
       if (!osrmResp.data?.routes?.length) {
-        return response.notFound({ error: 'OSRM no devolvió ninguna ruta' })
+        return response.notFound({ error: 'No se encontró ruta' })
       }
 
-      const route = osrmResp.data.routes[0]
-      const { distance, duration, geometry } = route
+      const { distance, duration } = osrmResp.data.routes[0]
+      const distanciaKm = Number((distance / 1000).toFixed(3))
+      const duracionMin = Math.round(duration / 60)
+      const co2AhorradoKg = Number((distanciaKm * 0.21).toFixed(3))
 
-      // Calcular CO2 ahorrado
-      const co2PerKm = 0.21
-      const km = distance / 1000
-      const co2AhorradoKg = Number.parseFloat((km * co2PerKm).toFixed(3))
-
-      // Guardar en PostGIS
-      const geojsonStr = JSON.stringify(geometry)
-      const insertQuery = `
-        INSERT INTO rutas (id_usuario, medio_transporte, origen, destino, distancia_km, duracion_min, co2_ahorrado_kg, geom, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ST_SetSRID(ST_GeomFromGeoJSON(?), 4326), now())
-        RETURNING id
-      `
-      const inserted = await db.rawQuery(insertQuery, [
-        auth.user!.id,
+      const ruta = await Ruta.create({
+        idUsuario: auth.user!.id,
         medioTransporte,
-        `${waypoints[0][1]},${waypoints[0][0]}`,
-        `${waypoints[waypoints.length - 1][1]},${waypoints[waypoints.length - 1][0]}`,
-        distance,
-        duration,
+        origen,
+        destino,
+        distanciaKm,
+        duracionMin,
         co2AhorradoKg,
-        geojsonStr,
-      ])
-
-      const id = inserted.rows[0].id
-
-      // Leer ruta guardada
-      const readQuery = `
-        SELECT id, medio_transporte, origen, destino, distancia_km, duracion_min, co2_ahorrado_kg, ST_AsGeoJSON(geom) as geom_geojson
-        FROM rutas WHERE id = ?
-      `
-      const saved = await db.rawQuery(readQuery, [id])
-      const row = saved.rows[0]
+      })
 
       return response.created({
-        id: row.id,
-        medioTransporte: row.medio_transporte,
-        origin: row.origen,
-        destination: row.destino,
-        distanciaKm: Number(row.distancia_km),
-        duracionMin: Number(row.duracion_min),
-        co2AhorradoKg: Number(row.co2_ahorrado_kg),
-        geometry: JSON.parse(row.geom_geojson),
+        medioTransporte: ruta.medioTransporte,
+        origen: ruta.origen,
+        destino: ruta.destino,
       })
     } catch (err) {
-      console.error('❌ Error en OSRM/PostGIS:', err.response?.data || err.message || err)
-      return response.internalServerError({ error: 'Error al calcular/guardar la ruta' })
+      console.error('Error en OSRM:', err.message)
+      return response.internalServerError({ error: 'Error al calcular ruta' })
     }
   }
 
@@ -118,5 +95,15 @@ export default class RutasController {
       console.error('❌ Error obteniendo rutas:', err)
       return response.internalServerError({ error: 'Error al obtener rutas' })
     }
+    const rutas = await Ruta.query()
+      .where('id_usuario', auth.user!.id)
+      .orderBy('created_at', 'desc')
+    return response.ok(
+      rutas.map((ruta) => ({
+        medioTransporte: ruta.medioTransporte,
+        origen: ruta.origen,
+        destino: ruta.destino,
+      }))
+    )
   }
 }
